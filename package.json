@@ -8,12 +8,19 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/express": "^5.0.3",
     "@types/ws": "^8.18.1"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
     "ws": "^8.18.2"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.9",
+    "utf-8-validate": "^6.0.5"
   }
 }

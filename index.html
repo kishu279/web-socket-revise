@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket.IO Chat</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 20px;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .connected {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .messages {
+        height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .message {
+        margin: 5px 0;
+        padding: 5px;
+        background-color: white;
+        border-radius: 4px;
+        border-left: 3px solid #007bff;
+      }
+      input,
+      button {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Socket.IO Chat Test</h1>
+      <div id="status" class="status disconnected">Disconnected</div>
+
+      <div>
+        <h3>Channel Management</h3>
+        <input
+          type="text"
+          id="channelInput"
+          placeholder="Enter channel name"
+          value="general"
+        />
+        <button onclick="subscribeToChannel()">Subscribe</button>
+        <button onclick="unsubscribeFromChannel()">Unsubscribe</button>
+      </div>
+
+      <div>
+        <h3>Messages</h3>
+        <div id="messages" class="messages"></div>
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Type your message..."
+          onkeypress="if(event.key==='Enter') sendMessage()"
+        />
+        <button onclick="sendMessage()">Send Message</button>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const statusDiv = document.getElementById("status");
+      const messagesDiv = document.getElementById("messages");
+      let currentChannel = null;
+
+      // Connection events
+      socket.on("connect", () => {
+        console.log("Connected to server:", socket.id);
+        statusDiv.textContent = `Connected (ID: ${socket.id})`;
+        statusDiv.className = "status connected";
+        addMessage("System", "Connected to server", "system");
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.log("Disconnected:", reason);
+        statusDiv.textContent = "Disconnected";
+        statusDiv.className = "status disconnected";
+        addMessage("System", `Disconnected: ${reason}`, "system");
+      });
+
+      socket.on("connect_error", (error) => {
+        console.error("Connection error:", error);
+        addMessage("System", `Connection error: ${error.message}`, "error");
+      });
+
+      // Channel events
+      socket.on("subscribed", (data) => {
+        console.log("Subscribed:", data);
+        currentChannel = data.channel;
+        addMessage("System", data.message, "success");
+      });
+
+      socket.on("unsubscribed", (data) => {
+        console.log("Unsubscribed:", data);
+        currentChannel = null;
+        addMessage("System", data.message, "info");
+      });
+
+      // Message events
+      socket.on("message", (data) => {
+        console.log("Received message:", data);
+        addMessage(data.user, data.message, "message", data.timestamp);
+      });
+
+      function subscribeToChannel() {
+        const channel = document.getElementById("channelInput").value.trim();
+        if (channel) {
+          socket.emit("subscribe", channel);
+        }
+      }
+
+      function unsubscribeFromChannel() {
+        const channel = document.getElementById("channelInput").value.trim();
+        if (channel) {
+          socket.emit("unsubscribe", channel);
+        }
+      }
+
+      function sendMessage() {
+        const messageInput = document.getElementById("messageInput");
+        const message = messageInput.value.trim();
+
+        if (message && currentChannel) {
+          socket.emit("message", {
+            channel: currentChannel,
+            message: message,
+          });
+          addMessage("You", message, "own-message");
+          messageInput.value = "";
+        } else if (!currentChannel) {
+          addMessage("System", "Please subscribe to a channel first", "error");
+        }
+      }
+
+      function addMessage(sender, message, type, timestamp) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+
+        const time = timestamp
+          ? new Date(timestamp).toLocaleTimeString()
+          : new Date().toLocaleTimeString();
+        messageDiv.innerHTML = `<strong>[${time}] ${sender}:</strong> ${message}`;
+
+        if (type === "system") messageDiv.style.borderLeftColor = "#28a745";
+        if (type === "error") messageDiv.style.borderLeftColor = "#dc3545";
+        if (type === "success") messageDiv.style.borderLeftColor = "#28a745";
+        if (type === "info") messageDiv.style.borderLeftColor = "#17a2b8";
+        if (type === "own-message")
+          messageDiv.style.borderLeftColor = "#6f42c1";
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      // Test connection on page load
+      setTimeout(() => {
+        addMessage("System", "Testing Socket.IO connection...", "info");
+      }, 100);
+    </script>
+  </body>
+</html>
