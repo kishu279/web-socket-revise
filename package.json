@@ -1,0 +1,19 @@
+{
+  "name": "web-chat",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf dist && echo 'Done.'",
+    "dev": "bun index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/ws": "^8.18.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "ws": "^8.18.2"
+  }
+}
